@@ -1,0 +1,108 @@
+{
+  "name": "ai-expense-analysis",
+  "version": "1.0.0",
+  "displayName": "AI Expense Analysis",
+  "description": "AI-powered expense analysis with receipt extraction, depreciation calculation (AfA), and tax deductibility analysis using LLM providers",
+  "author": "OpenTYME Team",
+  "license": "MIT",
+
+  "compatibility": {
+    "opentyme": ">=1.0.0"
+  },
+
+  "backend": {
+    "entryPoint": "index.ts",
+    "routes": {
+      "prefix": "/api/plugins/ai-expense-analysis",
+      "file": "index.ts"
+    }
+  },
+
+  "frontend": {
+    "entryPoint": "index.ts",
+    "slots": [
+      {
+        "name": "expense-form-actions",
+        "component": "components/AIAnalysisButton.tsx",
+        "order": 10
+      },
+      {
+        "name": "settings-tabs",
+        "component": "components/AISettingsTab.tsx",
+        "order": 10
+      }
+    ]
+  },
+
+  "settings": {
+    "schema": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "label": "Enable AI Analysis",
+        "description": "Master switch for all AI analysis features"
+      },
+      "ai_enabled": {
+        "type": "boolean",
+        "default": false,
+        "label": "Enable AI Provider",
+        "description": "Enable connection to AI provider for analysis"
+      },
+      "ai_provider": {
+        "type": "string",
+        "default": "local",
+        "enum": ["local", "openai", "azure", "anthropic"],
+        "label": "AI Provider",
+        "description": "AI service provider (local, openai, azure, anthropic)"
+      },
+      "ai_api_url": {
+        "type": "string",
+        "default": "http://localhost:1234/v1",
+        "label": "AI API URL",
+        "description": "Base URL for the AI API (e.g., http://localhost:1234/v1 for LM Studio)"
+      },
+      "ai_api_key": {
+        "type": "string",
+        "default": "",
+        "secret": true,
+        "label": "AI API Key",
+        "description": "API key for the AI provider (if required)"
+      },
+      "ai_model": {
+        "type": "string",
+        "default": "qwen/qwen3-v1-30b",
+        "label": "AI Model",
+        "description": "Model name to use (e.g., qwen/qwen3-v1-30b, gpt-4)"
+      },
+      "mcp_server_url": {
+        "type": "string",
+        "default": "http://mcp-server:8000",
+        "label": "MCP Server URL",
+        "description": "URL of the MCP server for PDF text extraction"
+      },
+      "mcp_server_api_key": {
+        "type": "string",
+        "default": "",
+        "secret": true,
+        "label": "MCP Server API Key",
+        "description": "API key for MCP server (if required)"
+      },
+      "auto_analyze": {
+        "type": "boolean",
+        "default": true,
+        "label": "Auto-Analyze Receipts",
+        "description": "Automatically analyze uploaded receipt PDFs"
+      },
+      "min_confidence_threshold": {
+        "type": "number",
+        "default": 0.7,
+        "label": "Minimum Confidence Threshold",
+        "description": "Minimum confidence score (0.0-1.0) to accept AI suggestions"
+      }
+    },
+    "ui": {
+      "section": "AI Expense Analysis",
+      "icon": "Brain"
+    }
+  }
+}
