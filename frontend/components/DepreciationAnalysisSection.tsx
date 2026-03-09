@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react';
 import { useAnalyzeDepreciation, useUpdateDepreciation } from '../../../hooks/api/useDepreciation';
-import { Button } from '../../common/Button';
+import { Button } from '../../../components/common/Button';
 
 interface DepreciationAnalysisSectionProps {
   expenseId: string;

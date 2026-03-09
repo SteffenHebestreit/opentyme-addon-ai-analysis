@@ -29,11 +29,34 @@ export interface PluginLogger {
   debug: (message: string, ...args: any[]) => void;
 }
 
+export interface CustomToolParameter {
+  type: 'string' | 'number' | 'boolean' | 'integer' | 'array' | 'object';
+  description?: string;
+  enum?: (string | number)[];
+  items?: CustomToolParameter;
+  properties?: Record<string, CustomToolParameter>;
+}
+
+export interface AIContext {
+  registerTool: (tool: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, CustomToolParameter>;
+      required?: string[];
+    };
+    execute: (args: Record<string, unknown>) => Promise<unknown>;
+  }) => void;
+  registerSystemPromptExtension: (pluginName: string, text: string) => void;
+}
+
 /**
  * Injected by OpenTYME when your plugin is initialized.
  * - `database` — PostgreSQL pool (pg.Pool). Use `database.query(sql, params)`.
  * - `logger`   — Structured logger (Winston-compatible).
  * - `app`      — Express application instance (for advanced use only).
+ * - `ai`       — AI integration hooks (always present).
  *
  * Authentication is applied automatically — req.user is always populated.
  */
@@ -43,6 +66,7 @@ export interface PluginContext {
   };
   logger: PluginLogger;
   app: any;
+  ai: AIContext;
 }
 
 export interface PluginSettings {

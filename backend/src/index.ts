@@ -23,11 +23,39 @@ const plugin: AddonPlugin = {
   name: 'ai-expense-analysis',
 
   async initialize(context: PluginContext): Promise<void> {
-    const { database: db, logger } = context;
+    const { database: db, logger, ai } = context;
+
+    // Tell the LLM what this addon's tools do
+    ai.registerSystemPromptExtension(
+      'ai-expense-analysis',
+      'You have tools for AI-powered expense analysis: analyze PDF receipts to extract expense data (ai_expense_analysis_analyze_receipt), analyze expenses for German tax law AfA depreciation eligibility (ai_expense_analysis_analyze_depreciation), and clear stored AI analysis (ai_expense_analysis_clear_analysis). Use these when asked about receipt scanning, tax depreciation (AfA), or expense AI analysis.'
+    );
 
     /**
-     * POST /api/plugins/ai-expense-analysis/analyze-receipt
-     * Extract expense data from PDF receipt
+     * @swagger
+     * /plugins/ai-expense-analysis/analyze-receipt:
+     *   post:
+     *     operationId: ai_expense_analysis_analyze_receipt
+     *     summary: Extract expense data from a PDF receipt using AI
+     *     description: Uploads a base64-encoded PDF receipt and uses AI to extract expense details such as amount, vendor, date, and category.
+     *     tags: [AI Expense Analysis]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [receiptBuffer, filename]
+     *             properties:
+     *               receiptBuffer:
+     *                 type: string
+     *                 description: Base64-encoded PDF content
+     *               filename:
+     *                 type: string
+     *                 description: Original filename of the receipt
+     *     responses:
+     *       200:
+     *         description: Extracted expense data
      */
     router.post('/analyze-receipt', async (req: Request, res: Response) => {
       try {
@@ -65,8 +93,40 @@ const plugin: AddonPlugin = {
     });
 
     /**
-     * POST /api/plugins/ai-expense-analysis/analyze-depreciation
-     * Analyze expense for depreciation (AfA) eligibility
+     * @swagger
+     * /plugins/ai-expense-analysis/analyze-depreciation:
+     *   post:
+     *     operationId: ai_expense_analysis_analyze_depreciation
+     *     summary: Analyze an expense for German AfA depreciation eligibility
+     *     description: Uses AI to determine whether an expense qualifies for AfA (Absetzung für Abnutzung) depreciation under German tax law, and calculates the annual depreciation amount and useful life.
+     *     tags: [AI Expense Analysis]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [expense]
+     *             properties:
+     *               expense:
+     *                 type: object
+     *                 description: Expense data to analyze
+     *                 properties:
+     *                   id:
+     *                     type: string
+     *                     format: uuid
+     *                   description:
+     *                     type: string
+     *                   amount:
+     *                     type: number
+     *                   category:
+     *                     type: string
+     *                   expense_date:
+     *                     type: string
+     *                     format: date
+     *     responses:
+     *       200:
+     *         description: Depreciation analysis result
      */
     router.post('/analyze-depreciation', async (req: Request, res: Response) => {
       try {
@@ -109,8 +169,24 @@ const plugin: AddonPlugin = {
     });
 
     /**
-     * POST /api/plugins/ai-expense-analysis/clear-analysis/:expenseId
-     * Clear AI analysis for an expense
+     * @swagger
+     * /plugins/ai-expense-analysis/clear-analysis/{expenseId}:
+     *   post:
+     *     operationId: ai_expense_analysis_clear_analysis
+     *     summary: Clear stored AI analysis for an expense
+     *     description: Removes the AI-generated analysis data from a specific expense record.
+     *     tags: [AI Expense Analysis]
+     *     parameters:
+     *       - in: path
+     *         name: expenseId
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: uuid
+     *         description: ID of the expense to clear analysis for
+     *     responses:
+     *       200:
+     *         description: Analysis cleared successfully
      */
     router.post('/clear-analysis/:expenseId', async (req: Request, res: Response) => {
       try {
