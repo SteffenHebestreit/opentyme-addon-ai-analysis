@@ -1,5 +1,5 @@
 /**
- * AI Settings Configuration Tab
+ * AI Analysis Settings Tab
  *
  * Allows users to configure AI providers, models, and analysis preferences.
  * Exposed as a settings-tabs slot component. The static tabMeta property tells
@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePluginSettings } from '../hooks/usePluginSettings';
+import { getAccessToken } from '../../../services/auth/tokenManager';
 
 const PLUGIN_NAME = 'ai-expense-analysis';
 
@@ -27,10 +28,10 @@ export const AISettingsTab: React.FC = () => {
   const { data: settings, isLoading, error, updateSettings, isSaving } = usePluginSettings(PLUGIN_NAME);
 
   const [formData, setFormData] = useState(DEFAULT_FORM);
+  const [saveMessage, setSaveMessage] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  // Sync settings into form once loaded (avoids useState initialisation race)
   useEffect(() => {
     if (settings) {
       setFormData({
@@ -47,17 +48,18 @@ export const AISettingsTab: React.FC = () => {
     }
   }, [settings]);
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
+    setSaveMessage('');
     try {
       await updateSettings(formData);
-      alert('AI settings saved successfully!');
-    } catch (err) {
-      console.error('Failed to save AI settings:', err);
-      alert('Failed to save settings. Please try again.');
+      setSaveMessage('Settings saved successfully');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch {
+      setSaveMessage('Failed to save settings');
     }
   };
 
@@ -65,8 +67,9 @@ export const AISettingsTab: React.FC = () => {
     setTestingConnection(true);
     setTestResult(null);
     try {
+      const token = getAccessToken();
       const response = await fetch(`/api/plugins/${PLUGIN_NAME}/health`, {
-        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await response.json();
       const healthy = data.success && data.mcp_server?.healthy;
@@ -76,180 +79,199 @@ export const AISettingsTab: React.FC = () => {
           ? `Connected to MCP server at ${data.mcp_server.url}`
           : 'MCP server is not responding',
       });
-    } catch (err: any) {
-      setTestResult({ success: false, message: `Connection failed: ${err.message}` });
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: `Connection failed: ${err instanceof Error ? err.message : String(err)}` });
     } finally {
       setTestingConnection(false);
     }
   };
 
-  if (isLoading) return <div className="p-6">Loading AI settings...</div>;
+  const inputClass = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent';
+  const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded">
-        <p className="text-red-800">Failed to load AI settings</p>
+      <div className="p-4 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/20">
+        <p className="text-sm text-red-700 dark:text-red-300">Failed to load AI settings. Please reload the page.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Analysis Settings</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+          AI Analysis Settings
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Configure AI providers for receipt extraction and depreciation analysis.
         </p>
       </div>
 
-      {/* Master Enable */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Enable AI Analysis</h3>
-            <p className="text-sm text-gray-600">Master switch for all AI features</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.ai_enabled}
-              onChange={(e) => handleChange('ai_enabled', e.target.checked)}
-              className="sr-only peer"
+      {/* Enable toggle */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Analysis</h3>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={formData.ai_enabled}
+            onClick={() => handleChange('ai_enabled', !formData.ai_enabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+              formData.ai_enabled ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                formData.ai_enabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+          </button>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Enable AI Analysis
+          </span>
         </div>
-      </div>
 
-      {formData.ai_enabled && (
-        <>
-          {/* AI Provider Settings */}
-          <div className="bg-white rounded-lg shadow p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Provider Configuration</h3>
-
+        {formData.ai_enabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">AI Provider</label>
+              <label className={labelClass}>AI Provider</label>
               <select
                 value={formData.ai_provider}
                 onChange={(e) => handleChange('ai_provider', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass}
               >
-                <option value="local">Local (LM Studio)</option>
+                <option value="local">Local (LM Studio / vLLM)</option>
                 <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic Claude</option>
                 <option value="azure">Azure OpenAI</option>
-                <option value="anthropic">Anthropic (Claude)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">API URL</label>
+              <label className={labelClass}>Model Name</label>
               <input
                 type="text"
-                value={formData.ai_api_url}
-                onChange={(e) => handleChange('ai_api_url', e.target.value)}
-                placeholder="http://localhost:1234/v1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.ai_model}
+                onChange={(e) => handleChange('ai_model', e.target.value)}
+                className={inputClass}
+                placeholder="qwen/qwen3-v1-30b"
               />
-              <p className="mt-1 text-sm text-gray-500">Base URL for the AI API endpoint</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="md:col-span-2">
+              <label className={labelClass}>API URL</label>
+              <input
+                type="url"
+                value={formData.ai_api_url}
+                onChange={(e) => handleChange('ai_api_url', e.target.value)}
+                className={inputClass}
+                placeholder="http://localhost:1234/v1"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Base URL for the AI API endpoint
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={labelClass}>
                 API Key {formData.ai_provider !== 'local' && '(Required)'}
               </label>
               <input
                 type="password"
                 value={formData.ai_api_key}
                 onChange={(e) => handleChange('ai_api_key', e.target.value)}
-                placeholder={formData.ai_provider === 'local' ? 'Optional' : 'Enter your API key'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass}
+                placeholder={formData.ai_provider === 'local' ? 'Optional' : 'sk-...'}
+                autoComplete="new-password"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Model Name</label>
-              <input
-                type="text"
-                value={formData.ai_model}
-                onChange={(e) => handleChange('ai_model', e.target.value)}
-                placeholder="qwen/qwen3-v1-30b"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Model identifier (e.g., qwen/qwen3-v1-30b, gpt-4, claude-opus-4-6)
-              </p>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* MCP Server Settings */}
-          <div className="bg-white rounded-lg shadow p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">MCP Server (PDF Extraction)</h3>
-
+      {/* MCP Server */}
+      {formData.ai_enabled && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">MCP Server (PDF Extraction)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">MCP Server URL</label>
+              <label className={labelClass}>MCP Server URL</label>
               <input
-                type="text"
+                type="url"
                 value={formData.mcp_server_url}
                 onChange={(e) => handleChange('mcp_server_url', e.target.value)}
+                className={inputClass}
                 placeholder="http://mcp-server:8000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                MCP Server API Key (Optional)
-              </label>
+              <label className={labelClass}>MCP Server API Key (optional)</label>
               <input
                 type="password"
                 value={formData.mcp_server_api_key}
                 onChange={(e) => handleChange('mcp_server_api_key', e.target.value)}
+                className={inputClass}
                 placeholder="Optional"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <button
                 onClick={handleTestConnection}
                 disabled={testingConnection}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors text-sm"
               >
                 {testingConnection ? 'Testing...' : 'Test MCP Connection'}
               </button>
               {testResult && (
-                <div
-                  className={`mt-2 p-3 rounded ${
-                    testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                  }`}
-                >
+                <p className={`mt-2 text-sm font-medium ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {testResult.success ? '✓' : '✗'} {testResult.message}
-                </div>
+                </p>
               )}
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Analysis Preferences */}
-          <div className="bg-white rounded-lg shadow p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Preferences</h3>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Auto-Analyze Receipts</label>
-                <p className="text-sm text-gray-500">Automatically analyze uploaded PDFs</p>
-              </div>
-              <input
-                type="checkbox"
-                checked={formData.auto_analyze}
-                onChange={(e) => handleChange('auto_analyze', e.target.checked)}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
+      {/* Analysis Preferences */}
+      {formData.ai_enabled && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Analysis Preferences</h3>
+          <div className="space-y-4 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={formData.auto_analyze}
+                onClick={() => handleChange('auto_analyze', !formData.auto_analyze)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                  formData.auto_analyze ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.auto_analyze ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Auto-analyze uploaded receipts
+              </span>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Confidence Threshold:{' '}
-                {(formData.min_confidence_threshold * 100).toFixed(0)}%
+              <label className={labelClass}>
+                Minimum Confidence: {(formData.min_confidence_threshold * 100).toFixed(0)}%
               </label>
               <input
                 type="range"
@@ -257,28 +279,33 @@ export const AISettingsTab: React.FC = () => {
                 max="1"
                 step="0.05"
                 value={formData.min_confidence_threshold}
-                onChange={(e) =>
-                  handleChange('min_confidence_threshold', parseFloat(e.target.value))
-                }
-                className="w-full"
+                onChange={(e) => handleChange('min_confidence_threshold', parseFloat(e.target.value))}
+                className="w-full accent-purple-600"
               />
-              <p className="mt-1 text-sm text-gray-500">
-                Only accept AI suggestions with confidence above this threshold
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Only accept AI suggestions above this threshold
               </p>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Save Button */}
-      <div className="flex justify-end">
+      {/* Save */}
+      <div className="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg font-medium transition-colors"
         >
           {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
+        {saveMessage && (
+          <p className={`text-sm font-medium ${
+            saveMessage.includes('success') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          }`}>
+            {saveMessage}
+          </p>
+        )}
       </div>
     </div>
   );

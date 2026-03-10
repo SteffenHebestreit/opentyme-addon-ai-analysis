@@ -6,6 +6,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// Installed path: frontend/src/plugins/<addon>/hooks/ → 3 levels up to frontend/src/
+import { getAccessToken } from '../../../services/auth/tokenManager';
 
 interface RawPluginSettings {
   enabled: boolean;
@@ -22,8 +24,9 @@ export const usePluginSettings = (pluginName: string) => {
   const query = useQuery({
     queryKey: ['plugins', pluginName, 'settings'],
     queryFn: async (): Promise<Record<string, any>> => {
+      const token = getAccessToken();
       const response = await fetch(`/api/plugins/${pluginName}/settings`, {
-        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) throw new Error('Failed to load plugin settings');
       const data = await response.json();
@@ -34,10 +37,13 @@ export const usePluginSettings = (pluginName: string) => {
 
   const mutation = useMutation({
     mutationFn: async (config: Record<string, any>) => {
+      const token = getAccessToken();
       const response = await fetch(`/api/plugins/${pluginName}/settings`, {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ config }),
       });
       if (!response.ok) throw new Error('Failed to save plugin settings');
