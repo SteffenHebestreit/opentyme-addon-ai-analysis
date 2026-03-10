@@ -25,23 +25,12 @@
         "name": "expense-form-actions",
         "component": "components/AIAnalysisButton.tsx",
         "order": 10
-      },
-      {
-        "name": "settings-tabs",
-        "component": "components/AISettingsTab.tsx",
-        "order": 10
       }
     ]
   },
 
   "settings": {
     "schema": {
-      "enabled": {
-        "type": "boolean",
-        "default": true,
-        "label": "Enable AI Analysis",
-        "description": "Master switch for all AI analysis features"
-      },
       "ai_enabled": {
         "type": "boolean",
         "default": false,

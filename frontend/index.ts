@@ -7,7 +7,6 @@
 
 import type { AddonFrontendPlugin } from './src/types';
 import { DepreciationAnalysisSection } from './components/DepreciationAnalysisSection';
-import { AISettingsTab } from './components/AISettingsTab';
 
 const plugin: AddonFrontendPlugin = {
   name: 'ai-expense-analysis',
@@ -16,10 +15,6 @@ const plugin: AddonFrontendPlugin = {
     // Injected into the bottom of AddExpenseModal
     // Context: { setDescription, setAmount, setCurrency, setCategory, setExpenseDate, setNotes }
     'expense-form-actions': DepreciationAnalysisSection,
-
-    // Injected as a tab in AdminPage settings
-    // Component must expose static tabMeta = { id, label, icon }
-    'settings-tabs': AISettingsTab,
   },
 
   async initialize(): Promise<void> {
