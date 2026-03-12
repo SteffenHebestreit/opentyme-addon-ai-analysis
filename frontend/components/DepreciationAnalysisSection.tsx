@@ -65,8 +65,6 @@ export const DepreciationAnalysisSection: React.FC<DepreciationAnalysisSectionPr
   const analysis = analysisData || (!hasAnalyzed && parsedExisting ? { analysis: parsedExisting } : null);
 
   const handleAnalyze = () => {
-    console.log('[DepreciationAnalysis] ANALYZE BUTTON CLICKED - Expense ID:', expenseId);
-    console.log('[DepreciationAnalysis] Making API call to /expenses/' + expenseId + '/analyze-depreciation');
     setHasAnalyzed(true); // Mark that user has clicked analyze
     resetAnalysis(); // Reset previous mutation data
     analyze();
@@ -77,7 +75,7 @@ export const DepreciationAnalysisSection: React.FC<DepreciationAnalysisSectionPr
 
     const settings = {
       depreciation_type: analysis.analysis.recommendation,
-      depreciation_years: analysis.analysis.depreciation_years ?? null, // Use nullish coalescing to preserve null
+      depreciation_years: analysis.analysis.suggested_years ?? null,
       depreciation_start_date: expenseDate.split('T')[0],
       depreciation_method: 'linear' as const,
       useful_life_category: analysis.analysis.useful_life_category,
@@ -85,10 +83,6 @@ export const DepreciationAnalysisSection: React.FC<DepreciationAnalysisSectionPr
       tax_deductible_percentage: analysis.analysis.tax_deductible_percentage,
       tax_deductibility_reasoning: analysis.analysis.tax_deductibility_reasoning,
     };
-
-    console.log('[DepreciationAnalysis] Applying AI recommendation:', settings);
-    console.log('[DepreciationAnalysis] Category from AI:', analysis.analysis.suggested_category);
-    console.log('[DepreciationAnalysis] Full analysis object:', analysis.analysis);
 
     // If in edit mode, apply to form instead of saving immediately
     if (isEditing && onApplyToForm) {
@@ -222,9 +216,9 @@ export const DepreciationAnalysisSection: React.FC<DepreciationAnalysisSectionPr
                   <strong>Type:</strong>{' '}
                   {analysis.analysis.recommendation === 'immediate' ? 'Immediate Deduction' : 'Multi-Year Depreciation'}
                 </p>
-                {analysis.analysis.depreciation_years && (
+                {analysis.analysis.suggested_years && (
                   <p>
-                    <strong>Depreciation Period:</strong> {analysis.analysis.depreciation_years} years
+                    <strong>Depreciation Period:</strong> {analysis.analysis.suggested_years} years
                   </p>
                 )}
                 <p>

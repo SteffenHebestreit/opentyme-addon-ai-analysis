@@ -86,11 +86,11 @@ export class AIDepreciationService {
         timeout: 60000,
         headers: {
           'Content-Type': 'application/json',
-          ...(this.apiKey && { 'Authorization': `Bearer \${this.apiKey}` }),
+          ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` }),
         },
       });
 
-      logger.info(`AI depreciation init: \${this.provider} at \${this.apiUrl}`);
+      logger.info(`AI depreciation init: ${this.provider} at ${this.apiUrl}`);
     } catch (error: any) {
       logger.error('Failed to initialize AI depreciation service:', error.message);
       this.enabled = false;

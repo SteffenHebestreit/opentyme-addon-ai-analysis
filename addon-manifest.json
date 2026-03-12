@@ -23,7 +23,7 @@
     "slots": [
       {
         "name": "expense-form-actions",
-        "component": "components/AIAnalysisButton.tsx",
+        "component": "components/DepreciationAnalysisSection.tsx",
         "order": 10
       }
     ]
